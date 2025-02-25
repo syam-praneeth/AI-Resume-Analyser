@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Resume Analyzer</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* Dark Mode Styles */
+    body.dark-mode {
+      background: #000;
+      color: #fff;
+    }
+    body.dark-mode .upload-container, 
+    body.dark-mode .result-container {
+      background: linear-gradient(135deg, #FFD700, #DAA520);
+      color: #000;
+    }
+    body.dark-mode .btn-primary {
+      background: linear-gradient(to right, #FFD700, #DAA520);
+      color: #000;
+    }
+
+    /* Light Mode Styles */
+    body.light-mode {
+      background: #fff;
+      color: #000;
+    }
+    body.light-mode .upload-container, 
+    body.light-mode .result-container {
+      background: linear-gradient(135deg, #4CAF50, #2E7D32);
+      color: #fff;
+    }
+    body.light-mode .btn-primary {
+      background: linear-gradient(to right, #4CAF50, #2E7D32);
+      color: #fff;
+    }
+
+    /* Shared Styles */
+    body {
+      font-family: 'Poppins', sans-serif;
+    }
+    .container {
+      max-width: 50%;
+      margin: auto;
+    }
+    .upload-container, .result-container {
+      margin-top: 50px;
+      padding: 40px;
+      border-radius: 20px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+      animation: fadeInDown 1.5s;
+    }
+    @keyframes typewriter {
+      from { width: 0; }
+      to { width: 100%; }
+    }
+    .upload-container h1 {
+      overflow: hidden;
+      white-space: nowrap;
+      border-right: 2px solid #fff;
+      width: 100%;
+      animation: typewriter 3s steps(40) infinite alternate;
+      font-size: 3.5rem;
+      font-weight: 700;
+    }
+    .btn-primary {
+      border: none;
+      border-radius: 30px;
+      padding: 15px 30px;
+      font-size: 1.2rem;
+      font-weight: 600;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .btn-primary:hover {
+      transform: scale(1.1);
+      box-shadow: 0 5px 20px rgba(255, 215, 0, 0.5);
+    }
+    .progress-bar {
+      animation: slideInLeft 2s;
+    }
+    .list-group-item {
+      background: transparent;
+      border: none;
+    }
+    /* Theme Toggle Button */
+    .theme-toggle-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      border-radius: 50%;
+      font-size: 1.5rem;
+      padding: 10px;
+      border: none;
+      cursor: pointer;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .theme-toggle-btn:hover {
+      transform: scale(1.2);
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Theme Toggle Button -->
+  <button id="modeToggle" class="theme-toggle-btn btn btn-light">🌙</button>
+
+  <div class="container">
+    <div class="upload-container text-center animate_animated animate_fadeInDown">
+      <h1 class="mb-4">🚀 Resume Analyzer</h1>
+      <p class="mb-4">Upload your resume (PDF or DOCX) and get a detailed analysis!</p>
+      <form id="uploadForm">
+        <div class="mb-3">
+          <input class="form-control form-control-lg" type="file" id="resumeFile" name="resume" accept=".pdf,.docx" required />
+        </div>
+        <button type="submit" class="btn btn-primary animate_animated animatepulse animate_infinite">Analyze Resume</button>
+      </form>
+    </div>
+
+    <div class="result-container animate_animated animate_fadeInUp" id="resultContainer" style="display: none;">
+      <div id="resultOutput"></div>
+    </div>
+  </div>
+
+  <!-- Theme Toggle Script -->
+  <script>
+    const modeToggle = document.getElementById('modeToggle');
+    
+    // Load theme from localStorage
+    if (localStorage.getItem('theme') === 'light-mode') {
+      document.body.classList.add('light-mode');
+      modeToggle.textContent = '☀';
+    } else {
+      document.body.classList.add('dark-mode');
+      modeToggle.textContent = '🌙';
+    }
+
+    // Toggle theme
+    modeToggle.addEventListener('click', () => {
+      document.body.classList.toggle('dark-mode');
+      document.body.classList.toggle('light-mode');
+
+      if (document.body.classList.contains('light-mode')) {
+        modeToggle.textContent = '☀';
+        localStorage.setItem('theme', 'light-mode');
+      } else {
+        modeToggle.textContent = '🌙';
+        localStorage.setItem('theme', 'dark-mode');
+      }
+    });
+  </script>
+
+  <!-- Resume Analysis Script -->
+  <script>
+    function getRatingAndColor(score) {
+      let rating = '';
+      let colorClass = '';
+      if (score >= 70) {
+        rating = "🌟 Excellent";
+        colorClass = "bg-success";
+      } else if (score >= 50) {
+        rating = "👍 Good";
+        colorClass = "bg-warning";
+      } else {
+        rating = "⚠ Needs Improvement";
+        colorClass = "bg-danger";
+      }
+      return { rating, colorClass };
+    }
+
+    function displayAnalysis(data) {
+      let score = data.score_percentile !== undefined ? data.score_percentile : data.resume_score;
+      const { rating, colorClass } = getRatingAndColor(score);
+
+      let html = <div class="card mb-3 animate__animated animate__fadeIn">;
+      html += <div class="card-header text-white ${colorClass}">;
+      html += <h4 class="mb-0">Resume Score: ${score ? score.toFixed(2) : "N/A"}%</h4>;
+      html += </div>;
+      html += <div class="card-body">;
+      html += <p class="lead">Rating: <strong>${rating}</strong></p>;
+      html += <div class="progress mb-3" style="height: 35px;">;
+      html += <div class="progress-bar progress-bar-striped progress-bar-animated ${colorClass}" role="progressbar" style="width: ${score}%" aria-valuenow="${score}" aria-valuemin="0" aria-valuemax="100">${score ? score.toFixed(2) : "0"}%</div>;
+      html += </div>;
+      html += <ul class="list-group mb-3">;
+      html += <li class="list-group-item"><strong>Word Count:</strong> ${data.word_count}</li>;
+      html += <li class="list-group-item"><strong>ATS Friendly:</strong> ${data.ats_friendly}</li>;
+      html += </ul>;
+      if (data.suggestions && data.suggestions.length > 0) {
+        html += <h5>🔧 Suggestions for Improvement:</h5>;
+        html += <ul class="list-group">;
+        data.suggestions.forEach(suggestion => {
+          html += <li class="list-group-item">${suggestion}</li>;
+        });
+        html += </ul>;
+      }
+      html += </div></div>;
+      return html;
+    }
+
+    document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const fileInput = document.getElementById('resumeFile');
+      if (fileInput.files.length === 0) {
+        alert('Please select a resume file.');
+        return;
+      }
+      const formData = new FormData();
+      formData.append('resume', fileInput.files[0]);
+      const resultContainer = document.getElementById('resultContainer');
+      const resultOutput = document.getElementById('resultOutput');
+      resultOutput.innerHTML = '<p>🚀 Analyzing resume... Please wait.</p>';
+      resultContainer.style.display = 'block';
+      try {
+        const response = await fetch('http://127.0.0.1:5000/upload_resume', {
+          method: 'POST',
+          body: formData
+        });
+        if (!response.ok) {
+          resultOutput.innerHTML = '<p>❌ Error: ' + response.statusText + '</p>';
+          return;
+        }
+        const data = await response.json();
+        resultOutput.innerHTML = displayAnalysis(data);
+      } catch (error) {
+        resultOutput.innerHTML = '<p>❌ Error: ' + error.message + '</p>';
+      }
+    });
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
